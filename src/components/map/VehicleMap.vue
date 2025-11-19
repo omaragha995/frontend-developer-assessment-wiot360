@@ -66,6 +66,27 @@ const syncMarkers = (vehicles) => {
   });
 };
 
+watch(
+  () => store.vehicles,
+  (vehicles) => {
+    syncMarkers(vehicles);
+  },
+  { deep: true }
+);
+
+watch(
+  () => store.centerOnVehicleId,
+  (val) => {
+    if (!val || !map.value) return;
+    const v = store.vehicles.find((v) => v.id === val);
+    if (v) {
+      map.value.panTo([v.location.lat, v.location.lng]);
+      map.value.setZoom(11);
+    }
+    store.clearCenterRequest();
+  }
+);
+
 onMounted(() => {
   map.value = leaflet
     .map("vehicle-map", {
@@ -82,30 +103,9 @@ onMounted(() => {
 
   syncMarkers(store.vehicles);
 
-  watch(
-    () => store.vehicles,
-    (vehicles) => {
-      syncMarkers(vehicles);
-    },
-    { deep: true }
-  );
-
-  watch(
-    () => store.centerOnVehicleId,
-    (val) => {
-      if (!val || !map.value) return;
-      const v = store.vehicles.find((v) => v.id === val);
-      if (v) {
-        map.value.panTo([v.location.lat, v.location.lng]);
-        map.value.setZoom(11);
-      }
-      store.clearCenterRequest();
-    }
-  );
-
   // if selected vehicle.
   if (route.value.query.vehicleId) {
-    console.log("selected vehicle :: ", route.value.query.vehicleId);
+    store.setSelectedVehicle(route.value.query.vehicleId);
   }
 });
 
