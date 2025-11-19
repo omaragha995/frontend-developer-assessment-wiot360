@@ -14,7 +14,7 @@ const routes = [
   {
     path: "/vehicles/:id/history",
     name: "history",
-    component: () => import("../views/VehicleRouteHistory.vue"),
+    component: () => import("../views/VehicleHistoryPage.vue"),
   },
   {
     path: "/:pathMatch(.*)*",
