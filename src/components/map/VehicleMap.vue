@@ -1,8 +1,7 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, watch } from "vue";
 import leaflet from "leaflet";
-import { useRoute, useRouter } from "vuetify/lib/composables/router.mjs";
-
+import { useRoute, useRouter } from "vue-router";
 import { useVehicleStore } from "../../stores/vehicles";
 import vehicleStatus from "../../enums/VehicleStatus";
 
@@ -10,6 +9,7 @@ const router = useRouter();
 const route = useRoute();
 
 const map = ref(null);
+const isMapReady = ref(false); // 👈 new
 const markers = new Map();
 const store = useVehicleStore();
 
@@ -29,15 +29,17 @@ const createMarkerIcon = (color) => {
 };
 
 const syncMarkers = (vehicles) => {
-  if (!map.value) return;
+  if (!map.value || !isMapReady.value) return;
+
   const seenIds = new Set();
 
   vehicles.forEach((v) => {
+    if (!v.location) return;
+
     seenIds.add(v.id);
     let marker = markers.get(v.id);
     const color = getColorByStatus(v.status);
 
-    // if marker does not initialize.
     if (!marker) {
       marker = leaflet
         .marker([v.location.lat, v.location.lng], {
@@ -66,6 +68,27 @@ const syncMarkers = (vehicles) => {
   });
 };
 
+const centerMapOnVehicle = (id) => {
+  if (!id || !map.value || !isMapReady.value) return;
+
+  const v = store.vehicles.find((v) => v.id === id);
+  if (!v || !v.location) return;
+
+  map.value.setView([v.location.lat, v.location.lng], 11);
+};
+
+watch(
+  () => route.query,
+  (val) => {
+    if (!val.vehicleId) {
+      store.setSelectedVehicle(null);
+      store.clearCenterRequest();
+      map.value.setView([25, 48], 6);
+    }
+  }
+);
+
+// when vehicle updated sync with makers.
 watch(
   () => store.vehicles,
   (vehicles) => {
@@ -74,16 +97,14 @@ watch(
   { deep: true }
 );
 
+// when center map vehicle changed.
 watch(
   () => store.centerOnVehicleId,
   (val) => {
-    if (!val || !map.value) return;
-    const v = store.vehicles.find((v) => v.id === val);
-    if (v) {
-      map.value.panTo([v.location.lat, v.location.lng]);
-      map.value.setZoom(11);
+    centerMapOnVehicle(val);
+    if (val) {
+      store.clearCenterRequest();
     }
-    store.clearCenterRequest();
   }
 );
 
@@ -93,7 +114,6 @@ onMounted(() => {
       zoomControl: true,
     })
     .setView([25, 48], 6);
-  // .setView([23.4241, 53.8478], 6);
 
   leaflet
     .tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -101,19 +121,31 @@ onMounted(() => {
     })
     .addTo(map.value);
 
+  isMapReady.value = true; // 👈 mark ready
+
+  // initial markers
   syncMarkers(store.vehicles);
 
-  // if selected vehicle.
-  if (route.value.query.vehicleId) {
-    store.setSelectedVehicle(route.value.query.vehicleId);
+  // initial center if some page already set it before navigation
+  if (store.centerOnVehicleId) {
+    centerMapOnVehicle(store.centerOnVehicleId);
+    store.clearCenterRequest();
+  }
+
+  // if selected via query param
+  if (route.query.vehicleId) {
+    store.setSelectedVehicle(route.query.vehicleId);
   }
 });
 
 onBeforeUnmount(() => {
   if (map.value) {
     map.value.remove();
+    map.value = null;
   }
   markers.clear();
+  isMapReady.value = false;
+  store.setSelectedVehicle(null);
 });
 </script>
 
