@@ -32,9 +32,7 @@ const statusOptions = computed(() => [
 ]);
 
 const onRowClick = (vehicle) => {
-  store.setSelectedVehicle(vehicle.id);
   router.push({ name: "live-map", query: { vehicleId: vehicle.id } });
-  store.requestCenterOnVehicle(vehicle.id);
 };
 
 const onHeaderClick = (field) => {
