@@ -3,17 +3,14 @@ import { createPinia } from "pinia";
 import App from "./App.vue";
 import router from "./router";
 
+// import leaflet styles.
 import "leaflet/dist/leaflet.css";
-import "vuetify/styles";
-import { createVuetify } from "vuetify";
-import * as components from "vuetify/components";
-import * as directives from "vuetify/directives";
-import "./style.css";
 
-const vuetify = createVuetify({
-  components,
-  directives,
-});
+// init & import vuetify styles & icons.
+import vuetify from "./plugins/vuetify";
+
+// import global styles.
+import "./style.css";
 
 const app = createApp(App);
 app.use(createPinia());
