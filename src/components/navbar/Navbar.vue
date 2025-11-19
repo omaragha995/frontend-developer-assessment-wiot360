@@ -1,4 +1,24 @@
-<script setup></script>
+<script setup>
+import { watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
+
+import { useVehicleStore } from "../../stores/vehicles";
+
+const route = useRoute();
+const router = useRouter();
+
+const store = useVehicleStore();
+
+watch(
+  () => route.query,
+  (val) => {
+    if (!val.vehicleId) {
+      store.setSelectedVehicle(null);
+      store.clearCenterRequest();
+    }
+  }
+);
+</script>
 
 <template>
   <v-app-bar density="comfortable" color="primary" dark>
